@@ -139,9 +139,10 @@ def req_add_user(sid,form):
         private_id = form['private_id']
         first_name = form['first_name']
         last_name = form['last_name']
+        phone_number = form["phone_number"]
         full_name = f"{first_name} {last_name}"
         face_embedding = ram.temp_face_embedded[sid]
-        sql_success,message,_ = mysql_query.createUser(private_id,first_name,last_name)
+        sql_success,message,_ = mysql_query.createUser(private_id,first_name,last_name,phone_number)
         es_success,message,_ = es_query.add_face_vector(face_embedding,private_id,full_name,index_name="face_biometric_512")
         if sql_success and es_success:
             sio.emit("res_add_user",{"status":201,"message":"Registration success"})

@@ -2,11 +2,11 @@ import pymysql.err
 from database import connection
 from math import ceil
 
-cursor  = connection.mysql.cursor()
-def createUser(private_id,first_name,last_name):
+cursor  = connection.get_connection.mysql.cursor()
+def createUser(private_id,first_name,last_name,phone_number):
     try:
-        sql = "INSERT INTO `users` (`private_id`, `first_name`,`last_name`) VALUES (%s, %s,%s)"
-        cursor.execute(sql,(private_id,first_name,last_name))
+        sql = "INSERT INTO `users` (`private_id`, `first_name`,`last_name`,`phone_number`) VALUES (%s, %s,%s,%s)"
+        cursor.execute(sql,(private_id,first_name,last_name,phone_number))
         return  (True,"User created","")
     except pymysql.err.IntegrityError as ex:
         print("INFO : ",ex)
