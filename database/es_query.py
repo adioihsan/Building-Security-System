@@ -1,5 +1,6 @@
 from database import connection
 
+es = connection.get_connection.elastic_search
 def match_face_vector(face_embedding,index_name = "face_biometric"):
     query = {
         "size": 1,
@@ -17,12 +18,12 @@ def match_face_vector(face_embedding,index_name = "face_biometric"):
             }
         }
     }}
-    return connection.elastic_search.search(index=index_name, body=query)
+    return es.search(index=index_name, body=query)
 
 def add_face_vector(face_embedding,private_id,full_name,index_name = "face_biometric"):
     try:
         doc = {"biometric_vector": face_embedding,"private_id":private_id, "full_name": full_name}
-        connection.elastic_search.index(index=index_name, body=doc)
+        es.index(index=index_name, body=doc)
         return (True,"User added","")
     except Exception as ex:
         print("ERROR: ",ex)
