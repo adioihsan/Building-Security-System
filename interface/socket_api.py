@@ -198,6 +198,17 @@ def req_img_log(sid,img_name):
         return img_stream
 
 @sio.event
+def req_one_user(sid,data):
+    if sid in clients:
+        user_id = data["user_id"]
+        sql_success,message,data = mysql_query.getOneUser(user_id)
+        if sql_success:
+            return{"status":200,"message":message,"data":data}
+        else:
+            return{"status":500,"message":message,"data":data}
+        
+
+@sio.event
 def message(sid, data):
     print(f"Received message: {data}")
     sio.emit("response", {"data": "Server received your message"}, room=sid)

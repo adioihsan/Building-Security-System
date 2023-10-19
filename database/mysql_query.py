@@ -39,7 +39,6 @@ def saveEntryLog(form):
             print("ERROR: cant save log to DB cause:",ex)
             return  (False,"Server problem","")
        
-
 def getEntryLog(pagination,status=1):
     limit = pagination["per_page"]
     offset = (pagination["current_page"] -1)*pagination["per_page"]
@@ -90,6 +89,21 @@ def getAllUsers(pagination):
         print("ERROR: cant get all users from DB cause:",ex)
         return (False,"Server Problem",{"record":[],"pagination":pagination})
 
+def getOneUser(user_id):
+    try:
+        sql =" SELECT *, (SELECT timestamp FROM entry_logs WHERE entry_logs.user_id = users.private_id ORDER BY timestamp DESC LIMIT 1) AS last_entry FROM users WHERE users.id = %s"
+        cursor.execute(sql,(user_id))
+        result = cursor.fetchone()
+        if len(result) > 0:
+                timestamp =  result["last_entry"]
+                if timestamp is not None:
+                    result["last_entry"] = timestamp.strftime("%H:%M:%S - %d/%B/%Y")
+        else:
+                return (False,f"User with not registered",{"record":[]})
+        return (True,"succsess",{"record":result})
+    except Exception as ex:
+        print(f"ERROR: cant get a user with ID {user_id} from DB cause:",ex)
+        return (False,"Server Problem",{"record":[]})
 
  
  
