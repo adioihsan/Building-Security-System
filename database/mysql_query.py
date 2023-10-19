@@ -2,9 +2,9 @@ import pymysql.err
 from database import connection
 from math import ceil
 
-cursor  = connection.get_connection.mysql.cursor()
 def createUser(private_id,first_name,last_name,phone_number):
     try:
+        cursor  = connection.mysql.cursor()
         sql = "INSERT INTO `users` (`private_id`, `first_name`,`last_name`,`phone_number`) VALUES (%s, %s,%s,%s)"
         cursor.execute(sql,(private_id,first_name,last_name,phone_number))
         return  (True,"User created","")
@@ -14,6 +14,8 @@ def createUser(private_id,first_name,last_name,phone_number):
     except Exception as ex:
         print("ERROR: ",ex)
         return  (False,"Server problem","")
+    finally:
+        cursor.close()
 
 def saveEntryLog(form):
     #    {'personName': 'Adio Ihsan', 'temperature': 35.6, 'privateId': '812312321', 'qrCode': True, 'realFace': True, 'maxTemperature': 38.5, 'timestamp': '2023-10-07 13:31:34', 'status': True}
@@ -29,6 +31,7 @@ def saveEntryLog(form):
        status = int(form["status"])
 
        try:
+            cursor  = connection.mysql.cursor()
             sql = "INSERT INTO `entry_logs` (`user_id`, `timestamp`,`temperature`,`real_face`,`registered`,`enter_code`,`max_temperature`,`image_path`,`status`) VALUES (%s, %s,%s,%s,%s,%s,%s,%s,%s)"
             cursor.execute(sql,(user_id,timestamp,temperature,real_face,registered,enter_code,max_temperature,image_path,status))
             if status == 1:
@@ -38,12 +41,15 @@ def saveEntryLog(form):
        except Exception as ex:
             print("ERROR: cant save log to DB cause:",ex)
             return  (False,"Server problem","")
+       finally:
+            cursor.close()
        
 def getEntryLog(pagination,status=1):
     limit = pagination["per_page"]
     offset = (pagination["current_page"] -1)*pagination["per_page"]
     try:
         # count total data
+        cursor  = connection.mysql.cursor()
         sql_count = "SELECT COUNT(id)  as total_data from entry_logs where status=%s"
         cursor.execute(sql_count,(status))
         res_count = cursor.fetchone()
@@ -63,12 +69,15 @@ def getEntryLog(pagination,status=1):
     except Exception as ex:
         print("ERROR: cant get log from DB cause:",ex)
         return (False,"Server Problem",{"record":[],"pagination":pagination})
+    finally:
+        cursor.close()
 
 def getAllUsers(pagination):
     limit = pagination["per_page"]
     offset = (pagination["current_page"] -1)*pagination["per_page"]
     try:
         # count total data and pagination
+        cursor  = connection.mysql.cursor()
         sql_count = "SELECT COUNT(id)  as total_data from users"
         cursor.execute(sql_count)
         res_count = cursor.fetchone()
@@ -88,9 +97,12 @@ def getAllUsers(pagination):
     except Exception as ex:
         print("ERROR: cant get all users from DB cause:",ex)
         return (False,"Server Problem",{"record":[],"pagination":pagination})
+    finally:
+        cursor.close()
 
 def getOneUser(user_id):
     try:
+        cursor  = connection.mysql.cursor()
         sql =" SELECT *, (SELECT timestamp FROM entry_logs WHERE entry_logs.user_id = users.private_id ORDER BY timestamp DESC LIMIT 1) AS last_entry FROM users WHERE users.id = %s"
         cursor.execute(sql,(user_id))
         result = cursor.fetchone()
@@ -104,6 +116,30 @@ def getOneUser(user_id):
     except Exception as ex:
         print(f"ERROR: cant get a user with ID {user_id} from DB cause:",ex)
         return (False,"Server Problem",{"record":[]})
+    finally:
+        cursor.close()
+
+def deleteUserEntryLogs(private_id):
+        cursor  = connection.mysql.cursor()
+        sql = " DELETE FROM entry_logs WHERE user_id = %s"
+        cursor.execute(sql,(private_id))
+
+def deleteUser(private_id):
+    try:
+        cursor  = connection.mysql.cursor()
+        sql = " DELETE FROM users where private_id = %s"
+        cursor.execute(sql,(private_id))
+        deleteUserEntryLogs(private_id)
+        return (True,f"User with ID {private_id} deleted","")
+    except Exception as ex:
+        print(f"ERROR: cant get a user with ID {private_id} from DB cause:",ex)
+        return (False,"Server Problem","")
+    finally:
+        cursor.close()
+
+
+
+        
 
  
  

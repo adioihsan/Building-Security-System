@@ -80,21 +80,27 @@ def req_current_tempt(sid):
         sio.sleep()
 
 @sio.event
-def req_capture_face(sid):
+def req_capture_face(sid,data):
     if sid in clients:
         try:
             face_results =pm.face_results._getvalue()[0][0]
+            action = data["action"]
+            full_name = data["full_name"]
             if len(face_results) == 4 :
                 name,private_id,face_emb,face_img = face_results
-                if name !=  "Unknown":
-                    sio.emit("res_capture_face",{"status":409,"message":f"Already registered as : {name}"})
+                if action == "register" and name !=  "Unknown":
+                    return {"status":409,"message":f"Already registered as : {name}"}
+                elif action == "update" and (name != full_name or name != "Unknown"):
+                     return {"status":409,"message":f"Already registered as : {name}"}
                 else:
-                    ram.temp_full_frame[sid] = pm.rgb_frame.copy()
+                    # ram.temp_full_frame[sid] = pm.rgb_frame.copy()
                     ram.temp_face_embedded[sid] = face_emb
                     ram.temp_face_img[sid] = face_img
-                    sio.emit("res_capture_face",{"status":201,"message":"Photo captured"})
+                    if action =="register":
+                        return {"status":201,"message":"Photo captured"}
         except IndexError:
-            sio.emit("res_capture_face",{"status":404,"message":"Cant find  a face in the capture !"})  
+            return {"status":404,"message":"Cant find  a face in the capture !"}
+
 
 @sio.event
 def req_captured_face(sid):
@@ -102,19 +108,20 @@ def req_captured_face(sid):
         try:
             face_img = ram.temp_face_img[sid]
             face_64 = frame_transform._8bit_to_base64(face_img,quality=95)
-            sio.emit("res_captured_face",face_64)
+            # sio.emit("res_captured_face",face_64)
+            return {"status":200,"message":"success","data":{"image":face_64}}
         except KeyError:
             print("ERROR:","Captured face requested but dict empty")
 
-@sio.event
-def req_captured_frame(sid):
-    if sid in clients:
-        try:
-            full_frame = ram.temp_full_frame[sid]
-            frame_64 = frame_transform._8bit_to_base64(full_frame,quality=95)
-            sio.emit("res_captured_frame",frame_64)
-        except KeyError:
-            print("ERROR: ","Captured frame requested but dict empty")
+# @sio.event
+# def req_captured_frame(sid):
+#     if sid in clients:
+#         try:
+#             full_frame = ram.temp_full_frame[sid]
+#             frame_64 = frame_transform._8bit_to_base64(full_frame,quality=95)
+#             sio.emit("res_captured_frame",frame_64)
+#         except KeyError:
+#             print("ERROR: ","Captured frame requested but dict empty")
 
 @sio.event
 def req_current_qr(sid):
@@ -142,12 +149,12 @@ def req_add_user(sid,form):
         phone_number = form["phone_number"]
         full_name = f"{first_name} {last_name}"
         face_embedding = ram.temp_face_embedded[sid]
-        sql_success,message,_ = mysql_query.createUser(private_id,first_name,last_name,phone_number)
-        es_success,message,_ = es_query.add_face_vector(face_embedding,private_id,full_name,index_name="face_biometric_512")
+        sql_success,sql_message,_ = mysql_query.createUser(private_id,first_name,last_name,phone_number)
+        es_success,es_message,_ = es_query.add_face_vector(face_embedding,private_id,full_name)
         if sql_success and es_success:
             sio.emit("res_add_user",{"status":201,"message":"Registration success"})
         else:
-            sio.emit("res_add_user",{"status":409,"message":message})
+            sio.emit("res_add_user",{"status":409,"message":f"{sql_message} and {es_message}"})
 
 @sio.event
 def req_all_users(sid,data):
@@ -206,12 +213,24 @@ def req_one_user(sid,data):
             return{"status":200,"message":message,"data":data}
         else:
             return{"status":500,"message":message,"data":data}
-        
+
+@sio.event
+def req_delete_user(sid,data):
+    if sid in clients:
+        private_id = data["private_id"]
+        sql_success,sql_message,_ = mysql_query.deleteUser(private_id)
+        es_success,es_message,_ = es_query.delete_face_vector(private_id)
+
+        if sql_success and es_success:
+            return{"status":200,"message":sql_message,}
+        else:
+            return{"status":500,"message":f"{sql_message} and {es_message}"}
 
 @sio.event
 def message(sid, data):
     print(f"Received message: {data}")
     sio.emit("response", {"data": "Server received your message"}, room=sid)
+
     
 if __name__ == "__main__":
     # handle CTRL+C stop signal
