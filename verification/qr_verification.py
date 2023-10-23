@@ -16,7 +16,6 @@ class QrVerification():
         user_qr =  f"{private_id}{self.SERVER_SECRET}".encode('utf-8')
         try:
             full_qr = f"$argon2id$v=19$m=65536,t=1,{qr_string}"
-            print("full_qr",full_qr)
             self.hasher.verify(full_qr, user_qr)
             return True
         except argon2.exceptions.VerifyMismatchError:

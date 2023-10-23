@@ -92,6 +92,7 @@ def req_capture_face(sid,data):
                      return {"status":409,"message":f"Already registered as : {name}"}
                 else:
                     ram.temp_face_embedded[sid] = face_emb
+                    ram.temp_face_img[sid] = face_img
                     face_64 = frame_transform._8bit_to_base64(face_img,quality=95)
                     return {"status":201,"message":"Photo captured","image":face_64}
         except IndexError:
@@ -135,7 +136,14 @@ def req_verify_qr(sid,data):
             qr_verify_result = pm.verif_qr.verify_qr_string(private_id,qr_string)
             print("result",qr_verify_result)
             return qr_verify_result
-       
+
+@sio.event
+def req_qr_string(sid,data):
+    if sid in clients:
+        private_id = data["private_id"]
+        qr_string = pm.verif_qr.create_qr_string(private_id)
+        return qr_string
+
 @sio.event
 def req_real_face(sid):
     while sid in clients:
@@ -159,6 +167,8 @@ def req_add_user(sid,form):
         sql_success,sql_message,_ = mysql_query.createUser(private_id,first_name,last_name,phone_number,es_id)
         if sql_success and es_success:
             qr_string = pm.verif_qr.create_qr_string(private_id)
+            registered_photo = frame_transform._8bit_to_ioBytes(ram.temp_face_img[sid])
+            fileServer.uploadBytes(registered_photo,f"registered-user/{private_id}-{first_name}")
             sio.emit("res_add_user",{"status":201,"message":"Registration success","data":qr_string})
         else:
             sio.emit("res_add_user",{"status":409,"message":f"{sql_message} and {es_message}"})
@@ -183,7 +193,7 @@ def req_save_entry_log(sid,form):
         img_name = f'unknown-{timestamp}'
         if user_id is not None:
             img_name = f'{user_id}-{timestamp}'
-        img_path = f"FaceSecurity/{img_name}"
+        img_path = f"entry-log/{img_name}"
         log_img = frame_transform._8bit_to_ioBytes(pm.rgb_frame)
         fileServer.uploadBytes(log_img,img_path)
         sql_success,message,_ = mysql_query.saveEntryLog(form)
@@ -206,7 +216,15 @@ def req_get_entry_log(sid,data):
 @sio.event
 def req_img_log(sid,img_name):
     if sid in clients:
-        img_path = f"FaceSecurity/{img_name}"
+        img_path = f"entry-log/{img_name}"
+        img_file = fileServer.downloadFile(img_path)
+        img_stream = frame_transform.imgfile_to_base64(img_file)
+        return img_stream
+    
+@sio.event 
+def req_img_user(sid,img_name):
+    if sid in clients:
+        img_path = f"registered-user/{img_name}"
         img_file = fileServer.downloadFile(img_path)
         img_stream = frame_transform.imgfile_to_base64(img_file)
         return img_stream
@@ -217,6 +235,7 @@ def req_one_user(sid,data):
         user_id = data["user_id"]
         sql_success,message,data = mysql_query.getOneUser(user_id)
         if sql_success:
+
             return{"status":200,"message":message,"data":data}
         else:
             return{"status":500,"message":message,"data":data}
@@ -225,9 +244,13 @@ def req_one_user(sid,data):
 def req_update_face_biometric(sid,data):
     if sid in clients:
         es_id = data["es_id"]
+        private_id = data["private_id"]
+        first_name = data["first_name"]
         face_embedding =  ram.temp_face_embedded[sid] 
         es_success,es_message,_= es_query.update_face_biometric(es_id,face_embedding)
         if es_success:
+            registered_photo = frame_transform._8bit_to_ioBytes(ram.temp_face_img[sid])
+            fileServer.uploadBytes(registered_photo,f"registered-user/{private_id}-{first_name}")
             return {"status":201,"message":es_message}
         else:
             return {"status":500,"message":es_message}
