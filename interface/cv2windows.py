@@ -14,16 +14,19 @@ pm.start()
 try:
     while True:
         if pm.rgb_frame is not None:
-            draw_rois.draw_all_rois(pm.rgb_frame,pm.face_bboxs,pm.landmarks,pm.forhead_bboxs)
+            # draw_rois.draw_all_rois(pm.rgb_frame,pm.face_bboxs,pm.landmarks,pm.forhead_bboxs)
+            draw_rois.draw_face(pm.rgb_frame,pm.face_bboxs,-1)
             cv2.imshow("rgb",pm.rgb_frame)
         else: 
             print("Waiting for RGB frame...")
         if pm.flir_frame is not None:
             flir_8_bit_frame = frame_transform.raw_to_8bit(pm.flir_frame)
-            # flir_colored_frame = cv2.applyColorMap(flir_8_bit_frame, cv2.COLORMAP_TURBO)
-            draw_rois.draw_all_rois(flir_8_bit_frame,pm.c_face_bboxs,[],pm.c_forhead_bboxs)
-            # draw_rois.draw_landmark(flir_8_bit_frame,pm.landmarks,True)
-            draw_rois.draw_tempt(flir_8_bit_frame,pm.c_face_bboxs,pm.temperature)
+            # draw_rois.draw_all_rois(flir_8_bit_frame,pm.face_bboxs,[],pm.c_forhead_bboxs)
+            # draw_rois.draw_tempt(flir_8_bit_frame,pm.face_bboxs,pm.temperature)
+            draw_rois.draw_face(flir_8_bit_frame,pm.c_face_bboxs,3)
+            draw_rois.draw_forhead(flir_8_bit_frame,pm.c_forhead_bboxs)
+            draw_rois.draw_tempt_forhead(flir_8_bit_frame,pm.c_face_bboxs,pm.temperature)
+
             cv2.imshow("flir",flir_8_bit_frame)
         else:
              print("Waiting for FLIR frame...")

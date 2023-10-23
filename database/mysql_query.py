@@ -2,11 +2,11 @@ import pymysql.err
 from database import connection
 from math import ceil
 
-def createUser(private_id,first_name,last_name,phone_number):
+def createUser(private_id,first_name,last_name,phone_number,es_id):
     try:
         cursor  = connection.mysql.cursor()
-        sql = "INSERT INTO `users` (`private_id`, `first_name`,`last_name`,`phone_number`) VALUES (%s, %s,%s,%s)"
-        cursor.execute(sql,(private_id,first_name,last_name,phone_number))
+        sql = "INSERT INTO `users` (`private_id`, `first_name`,`last_name`,`phone_number`,`es_id`) VALUES (%s, %s,%s,%s,%s)"
+        cursor.execute(sql,(private_id,first_name,last_name,phone_number,es_id))
         return  (True,"User created","")
     except pymysql.err.IntegrityError as ex:
         print("INFO : ",ex)
@@ -134,6 +134,26 @@ def deleteUser(private_id):
     except Exception as ex:
         print(f"ERROR: cant get a user with ID {private_id} from DB cause:",ex)
         return (False,"Server Problem","")
+    finally:
+        cursor.close()
+
+def updateUser(form):
+    try:
+        private_id = form['private_id']
+        first_name = form['first_name']
+        last_name = form['last_name']
+        phone_number = form["phone_number"]
+        es_id = form["es_id"]
+        cursor  = connection.mysql.cursor()
+        sql = "UPDATE `users` SET private_id = %s , first_name=%s , last_name = %s,phone_number=%s  WHERE es_id = %s  "
+        cursor.execute(sql,(private_id,first_name,last_name,phone_number,es_id))
+        return  (True,"User info updated","")
+    except pymysql.err.IntegrityError as ex:
+        print("INFO : ",ex)
+        return (False,f"User with id '{private_id}' already registered","")
+    except Exception as ex:
+        print("ERROR: ",ex)
+        return  (False,"Server problem","")
     finally:
         cursor.close()
 

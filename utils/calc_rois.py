@@ -33,7 +33,7 @@ def get_ssd_bbox(frame,detections):
 		boxes.append([x1,y1,x2-x1,y2-y1])
 	return boxes
 
-def calibrate_bboxs(bboxs, offset_x=70, offset_y=-50, frame_width=640, frame_height=480,shrink=5):
+def calibrate_bboxs(bboxs, offset_x=60, offset_y=-40, frame_width=640, frame_height=480,shrink=1):
 	c_bboxs = []
 
 	for (x, y, w, h) in bboxs:
@@ -42,7 +42,6 @@ def calibrate_bboxs(bboxs, offset_x=70, offset_y=-50, frame_width=640, frame_hei
 		w = w - (w*shrink*2/100)
 		h = h - (h*shrink*2/100)
 
-		# makesure not width and height
 		x = max(int(x),0)
 		y = max(int(y),0)
 		w= min(int(w),frame_width - x)
@@ -55,9 +54,9 @@ def calibrate_bboxs(bboxs, offset_x=70, offset_y=-50, frame_width=640, frame_hei
 	
 def forhead_ROI_static(x,y,w,h):
 	ROI_x = round(x + 2*(w/6))
-	ROI_y =round(y + 2*(h/16))
+	ROI_y =round(y + 2*(h/9))
 	ROI_w = round(2*(w/6))
-	ROI_h = round(h/8)
+	ROI_h = round(h/9)
 	return [ROI_x,ROI_y,ROI_w,ROI_h]
 
 def forhead_ROI_dynamic(x1,y1,x2,y2,face_height):
@@ -77,17 +76,14 @@ def cut_face(frame,face_bboxs):
 	return faces
 
 
-def temp_to_c(val_k,unit="C"):
-	val=val_k
+def calc_tempt(val_16b,unit="C"):
+	val_k=val_16b/100
 	if unit == "C":
-		val = (val - 27315) / 100.0
+		val = (val_k - 273.15 ) 
 	elif unit == "F":
-		val = ((val - 27315)*9/5 + 32) / 100
+		val = ((val_k - 273.15)*9/5 + 32) 
 	elif unit == "R":
-		val = ((val - 27315)*4/5) / 100
+		val = ((val_k - 273.15)*4/5) 
 	else:
 		val = val_k
 	return round(val,1)
-
-
-      

@@ -7,8 +7,8 @@ def get_tempt(frame,bbox):
         x,y,w,h = bbox
         area = frame[y:y+h,x:x+w].copy()
         minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(area)
-        temp_max = calc_rois.temp_to_c(maxVal)
-        temp_min = calc_rois.temp_to_c(minVal)
+        temp_max = calc_rois.calc_tempt(maxVal,unit="C")
+        temp_min = calc_rois.calc_tempt(minVal,unit="C")
 
         ##  Todo ! count average temperature 
         # meanVal = np.mean(area)

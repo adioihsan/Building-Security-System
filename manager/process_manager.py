@@ -1,7 +1,7 @@
 import cv2
 import sys
 from detection import face_detection,temperature,qrcode
-from verification import face_verification, real_face_verification
+from verification import face_verification, real_face_verification,qr_verification
 from device import Rgb_cam,Flir_cam
 from threading import Thread , Event
 from multiprocessing import Manager,Queue
@@ -10,6 +10,7 @@ from utils import frame_transform,calc_rois
 
 class ProcessManager:
     def __init__(self,rgb_callback=None,flir_callback=None):
+        self.__load_config()
         manager = Manager()
         self.event = Event()
 
@@ -35,16 +36,17 @@ class ProcessManager:
         self.q_faces_flir = Queue(2)
         self.is_real_face_results = manager.list([0])
         self.is_real_face_results[0] = None
-        # self.real_face_verification = real_face_verification.Face(self.q_faces_flir,self.is_real_face_results)
+        self.real_face_verification = real_face_verification.Face(self.q_faces_flir,self.is_real_face_results)
         
 
         self.q_faces = Queue(2)
         self.face_results =manager.list([0])
         self.face_results[0] = [[None,None,[],[]]]
-        # self.face_verification = face_verification.Face(self.q_faces,self.face_results)
+        self.face_verification = face_verification.Face(self.q_faces,self.face_results)
 
 
         self.detect_qr = qrcode.QrCode()
+        self.verif_qr = qr_verification.QrVerification(self.SERVER_SECRET)
         self.qr_points = []
         self.qr_decoded = None
 
@@ -54,14 +56,14 @@ class ProcessManager:
         self.t_rgb.daemon = True
         self.t_flir.daemon = True
         self.t_qrCode.daemon = True
-
-        self.__load_config()
     
     def __load_config(self):
         parser = configparser.ConfigParser()
         parser.read("config.ini")
         config_face = parser["FaceDetection"]
         self.SHOW_LANDMARK = config_face.getboolean("landmark")
+        config_api = parser["Api"]
+        self.SERVER_SECRET = config_api["server_secret"]
 
     def rgb_worker(self):
         try:  
@@ -132,9 +134,9 @@ class ProcessManager:
     def start(self):
         self.t_rgb.start()
         self.t_flir.start()
-        # self.t_qrCode.start()
-        # self.face_verification.start()
-        # self.real_face_verification.start()
+        self.t_qrCode.start()
+        self.face_verification.start()
+        self.real_face_verification.start()
 
 
     def stop(self):
@@ -144,9 +146,9 @@ class ProcessManager:
         self.flir_cam.stop(*self.flir_control)
         self.t_rgb.join()
         self.t_flir.join()
-        # self.t_qrCode.join()
-        # self.real_face_verification.stop()
-        # self.face_verification.stop()
+        self.t_qrCode.join()
+        self.real_face_verification.stop()
+        self.face_verification.stop()
         print("INFO:","All services stopped successfully :)")
         sys.exit()
         

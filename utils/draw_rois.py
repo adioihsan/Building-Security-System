@@ -1,6 +1,6 @@
 import cv2
 
-def draw_face(frame, face_bboxs, offset=5):
+def draw_face(frame, face_bboxs, offset=1):
 	for (x, y, w, h) in face_bboxs:
 		# count offset
 		x = x - (w*offset/100)
@@ -8,7 +8,7 @@ def draw_face(frame, face_bboxs, offset=5):
 		w = w + (w*offset*2/100)
 		h = h + (h*offset*2/100)
 
-		# makesure not width and height
+		# # makesure not width and height
 		x = max(int(x),0)
 		y = max(int(y),0)
 		w= min(int(w), frame.shape[1] - x)
@@ -40,18 +40,25 @@ def draw_all_rois(frame,face_bboxs,landmarks,forhead_bboxs):
 	if len(forhead_bboxs)> 0 :draw_forhead(frame,forhead_bboxs)
 
 
-# def draw_tempt(frame,face_bboxes,temperature):
-# 	try:
-# 		if len(face_bboxes) == len(temperature["face"]):
-# 			for index,(x,y,w,h) in enumerate(face_bboxes):
-# 					cv2.rectangle(frame, (x, y), (x + w, y-60), (25,25,25), -1)
-# 					cv2.putText(frame,"loc : |max|avg",(x+5,y-50), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (55,250,55), 1)
+def draw_tempt_face(frame,face_bboxes,temperature):
+	try:
+		if len(face_bboxes) == len(temperature["face"]):
+			for index,(x,y,w,h) in enumerate(face_bboxes):
+					cv2.rectangle(frame, (x, y), (x + w, y-60), (25,25,25), -1)
+					max,avg,min = temperature["face"][index]
+					cv2.putText(frame, f"Tempt : {max}", (x+5,y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (55,250,55), 1)
+	except Exception as ex:
+		print(ex)
 
-# 					max,avg,min = temperature["forhead"][index]
-# 					cv2.putText(frame, f"fhd: {max}|{avg}", (x+5,y-30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (55,250,55), 1)
-
-# 					max,avg,min = temperature["face"][index]
-# 					cv2.putText(frame, f"face : {max}|{avg} ", (x+5,y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (55,250,55), 1)
+def draw_tempt_forhead(frame,face_bboxes,temperature):
+	try:
+		if len(face_bboxes) == len(temperature["forhead"]):
+			for index,(x,y,w,h) in enumerate(face_bboxes):
+					cv2.rectangle(frame, (x, y), (x + w, y-60), (25,25,25), -1)
+					max,avg,min = temperature["forhead"][index]
+					cv2.putText(frame, f"Tempt : {max} Celcius", (x+5,y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (55,250,55), 1)
+	except Exception as ex:
+		print(ex)
 
 def draw_tempt(frame,face_bboxes,temperature):
 	try:
@@ -70,11 +77,6 @@ def draw_tempt(frame,face_bboxes,temperature):
 					cv2.putText(frame,f"Minimum : {fh_min}",(5,420), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (55,250,55), 1)
 					cv2.putText(frame,f"Maximum : {fh_max}",(5,440), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (55,250,55), 1)
 					cv2.putText(frame,f"Average : {fh_avg}",(5,460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (55,250,55), 1)
-
-		
-		
-				
-
 		
 
 	except Exception as ex:
