@@ -1,5 +1,6 @@
 import pymysql.err
 from database import connection
+import argon2
 from math import ceil
 
 def createUser(private_id,first_name,last_name,phone_number,es_id):
@@ -157,7 +158,34 @@ def updateUser(form):
     finally:
         cursor.close()
 
+def login(form):
+    try:
+        username = form["username"]
+        password = form["password"]
+        cursor  = connection.mysql.cursor()
+        sql = "SELECT password,role from admin where username=%s"
+        cursor.execute(sql,(username))
+        result = cursor.fetchone()
+        if result is not None:
+            password_from_db = result["password"]
+            hasher = argon2.PasswordHasher(hash_len=8,salt_len=8,time_cost=1)
+            cek_pw = hasher.verify(password_from_db,password)
+            if cek_pw:
+                role = result["role"]
+                return (True,"Login Success",{"role":role})
+            else:
+                return (False,"Wrong Password","")
+        else:
+            return (False,"Username not found",'')
+    except argon2.exceptions.VerifyMismatchError:
+        return (False,"Wrong Password","")
+    except Exception as ex:
+        print("ERROR: ",ex)
+        return  (False,"Server problem","")
+    
+        
 
+        
 
         
 

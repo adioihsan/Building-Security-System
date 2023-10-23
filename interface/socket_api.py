@@ -3,6 +3,7 @@ import sys
 import socketio
 import eventlet
 import signal
+import time
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -12,6 +13,7 @@ from utils import draw_rois , frame_transform,calc_rois
 from storage import ram,file_server
 from manager.process_manager import ProcessManager
 from database import mysql_query,es_query
+from threading import Thread
 
 pm = ProcessManager()
 pm.start()
@@ -98,33 +100,12 @@ def req_capture_face(sid,data):
         except IndexError:
             return {"status":404,"message":"Cant find  a face in the capture !"}
 
-
-# @sio.event
-# def req_captured_face(sid):
-#     if sid in clients:
-#         try:
-#             face_img = ram.temp_face_img[sid]
-#             face_64 = frame_transform._8bit_to_base64(face_img,quality=95)
-#             return {"status":200,"message":"success","data":{"image":face_64}}
-#         except KeyError:
-#             print("ERROR:","Captured face requested but dict empty")
-
-# @sio.event
-# def req_captured_frame(sid):
-#     if sid in clients:
-#         try:
-#             full_frame = ram.temp_full_frame[sid]
-#             frame_64 = frame_transform._8bit_to_base64(full_frame,quality=95)
-#             sio.emit("res_captured_frame",frame_64)
-#         except KeyError:
-#             print("ERROR: ","Captured frame requested but dict empty")
-
 @sio.event
 def req_current_qr(sid):
     while sid in clients:
         if pm.qr_decoded is not None:
             sio.emit("res_current_qr",pm.qr_decoded)
-        sio.sleep(1)
+        sio.sleep(0.5)
 
 @sio.event
 def req_verify_qr(sid,data):
@@ -276,14 +257,28 @@ def req_delete_user(sid,data):
             return{"status":200,"message":sql_message,}
         else:
             return{"status":500,"message":f"{sql_message} and {es_message}"}
+        
+@sio.event
+def req_login(sid,form):
+    if sid in clients:
+       sql_success,sql_message,data = mysql_query.login(form)
+       if sql_success :
+           return{"status":200,"message":sql_message,"data":data}
+       else:
+            return{"status":405,"message":sql_message,"data":""}
+
+        
 
 @sio.event
 def message(sid, data):
     print(f"Received message: {data}")
     sio.emit("response", {"data": "Server received your message"}, room=sid)
 
+
     
 if __name__ == "__main__":
+
+    
     # handle CTRL+C stop signal
     def handle_signal(signum, frame):
         print(f"Received signal {signum}. Stopping the server and the services gracefully.")
@@ -294,12 +289,15 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
 
+  
+
     print("INF0:","Starting api")
 #     static_files = {
 #     '/': './interface/web_FE/index.html',
 #     '/static':'./interface/web_FE/static'
 # }
     # app = socketio.WSGIApp(sio,static_files=static_files)
+
     app = socketio.WSGIApp(sio)
     eventlet.wsgi.server(eventlet.listen(("0.0.0.0", 5000)), app)
     sys.exit()

@@ -79,8 +79,7 @@ class Face(Process):
             res = es_query.match_face_vector(face_embedding,index_name="face_biometric_512")
 
             score = res["hits"]["hits"][0]["_score"]
-            print("face score :",score)
-            if float(score) >= 0.047:
+            if float(score) >= 0.05:
                 face_name = res["hits"]["hits"][0]["_source"]["full_name"]
                 private_id = res["hits"]["hits"][0]["_source"]["private_id"]
         except Exception as ex:
@@ -91,7 +90,6 @@ class Face(Process):
     def stop(self):
         self.running  = False
         self.terminate()
-
         
     def run(self):
         print("INFO: ","Preparing face verification")

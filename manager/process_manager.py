@@ -46,6 +46,7 @@ class ProcessManager:
 
 
         self.detect_qr = qrcode.QrCode()
+        self.last_decoded_qr = ""
         self.verif_qr = qr_verification.QrVerification(self.SERVER_SECRET)
         self.qr_points = []
         self.qr_decoded = None
@@ -125,11 +126,34 @@ class ProcessManager:
                 self.qr_points = points
                 if(ret):
                     self.qr_decoded = decoded
+                    self.last_decoded_qr = decoded
                 else:
                     self.qr_decoded = None
             except Exception as ex:
                 print("Error:",f"QR detection services error. cause:{ex}")
         print("INFO: qr worker stopped")
+
+    
+    # def user_entry_worker(self):
+    #     counter = 0
+    #     while not self.event.is_set():
+    #         try:
+    #             if len(self.face_bboxs) > 0:
+    #                 face_results = self.face_results._getvalue()[0]
+    #                 face_and_id = [fnc[0:2] for fnc in face_results]
+    #                 if len(face_and_id) > 0 :
+    #                     private_id = face_and_id[0][1]
+    #                     is_real_face = self.is_real_face_results._getvalue()[0][0]
+    #                     is_tempt_ok = temperature[0][0] <= 38.5 
+    #                     if self.last_decoded_qr is  not None:
+    #                         is_qr_verified = self.verif_qr.verify_qr_string(private_id,self.qr_decoded)
+    #                         if private_id != "-" and is_real_face and is_tempt_ok and is_qr_verified:
+    #                             print("user verified")
+    #                         else:
+    #                             print("user not verified")
+    #         except Exception as ex:
+    #             pass
+                
     
     def start(self):
         self.t_rgb.start()
@@ -137,6 +161,7 @@ class ProcessManager:
         self.t_qrCode.start()
         self.face_verification.start()
         self.real_face_verification.start()
+
 
 
     def stop(self):
@@ -149,6 +174,7 @@ class ProcessManager:
         self.t_qrCode.join()
         self.real_face_verification.stop()
         self.face_verification.stop()
+ 
         print("INFO:","All services stopped successfully :)")
         sys.exit()
         
